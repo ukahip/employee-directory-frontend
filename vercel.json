@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "http://employee-dir-alb-660684405.us-west-1.elb.amazonaws.com/:path*"
+      "destination": "$API_BASE_URL/:path*"
     }
   ]
 }
