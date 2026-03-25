@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Directory</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,700;0,900;1,300;1,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── THEME TOKENS ── */
+  [data-theme="dark"] {
+    --bg:       #0F0F0F;
+    --surface:  #1A1A1A;
+    --surface2: #222222;
+    --border:   #2E2E2E;
+    --text:     #F0EDE6;
+    --muted:    #666666;
+    --label:    #888888;
+    --accent:   #C8F85A;
+    --accent2:  #5AF8C8;
+    --red:      #F85A5A;
+    --nav-bg:   #141414;
+    --card-hover: #222222;
+    --shadow:   rgba(0,0,0,0.5);
+  }
+
+  [data-theme="light"] {
+    --bg:       #F7F4EE;
+    --surface:  #FFFFFF;
+    --surface2: #F0EDE6;
+    --border:   #E0D9CE;
+    --text:     #1A1A1A;
+    --muted:    #999999;
+    --label:    #777777;
+    --accent:   #2A7A1A;
+    --accent2:  #1A5A7A;
+    --red:      #D63A3A;
+    --nav-bg:   #FFFFFF;
+    --card-hover: #F0EDE6;
+    --shadow:   rgba(0,0,0,0.1);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .nav-brand {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .nav-brand em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-link {
+    padding: 8px 18px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--muted);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    font-family: 'Instrument Sans', sans-serif;
+  }
+
+  .nav-link:hover { color: var(--text); background: var(--surface2); }
+
+  .nav-link.active {
+    color: var(--text);
+    background: var(--surface2);
+    border-color: var(--border);
+  }
+
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+
+  /* THEME TOGGLE */
+  .theme-toggle {
+    width: 44px;
+    height: 24px;
+    background: var(--border);
+    border-radius: 100px;
+    cursor: pointer;
+    position: relative;
+    border: none;
+    transition: background 0.3s;
+    flex-shrink: 0;
+  }
+
+  .theme-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text);
+    transition: transform 0.3s, background 0.3s;
+  }
+
+  [data-theme="light"] .theme-toggle::after { transform: translateX(20px); }
+
+  .theme-icon {
+    position: absolute;
+    font-size: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .theme-icon.moon { left: 5px; }
+  .theme-icon.sun  { right: 4px; }
+
+  /* ── PAGES ── */
+  .page { display: none; animation: fadeUp 0.5s ease both; }
+  .page.active { display: block; }
+
+  /* ── HERO (Dashboard) ── */
+  .hero {
+    padding: 64px 72px 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-tag {
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .hero-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(64px, 8vw, 120px);
+    font-weight: 900;
+    line-height: 0.88;
+    letter-spacing: -0.03em;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+
+  .hero-sub {
+    margin-top: 24px;
+    font-size: 17px;
+    color: var(--muted);
+    max-width: 480px;
+    line-height: 1.6;
+  }
+
+  /* ── STATS ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-item {
+    padding: 32px 72px;
+    border-right: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+
+  .stat-item:last-child { border-right: none; }
+  .stat-item:hover { background: var(--surface); }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-size: 64px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-top: 6px;
+    font-weight: 600;
+  }
+
+  /* ── DIRECTORY ── */
+  .dir-section {
+    padding: 48px 72px;
+  }
+
+  .dir-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+    gap: 24px;
+  }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .search-box { position: relative; }
+
+  .search-box input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px 18px 13px 44px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    width: 240px;
+    transition: all 0.2s;
+  }
+
+  .search-box input::placeholder { color: var(--muted); }
+  .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,248,90,0.08); }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  /* CARDS */
+  .emp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .emp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    transition: all 0.25s;
+    animation: fadeUp 0.4s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .emp-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    transition: border-color 0.25s;
+    pointer-events: none;
+  }
+
+  .emp-card:hover {
+    background: var(--card-hover);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px var(--shadow);
+  }
+
+  .emp-card:hover::after { border-color: var(--accent); }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .emp-avatar {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0F0F0F;
+    flex-shrink: 0;
+  }
+
+  .emp-num {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-style: italic;
+    font-weight: 300;
+    color: var(--muted);
+  }
+
+  .emp-name {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .emp-role {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: #0F0F0F;
+    background: var(--accent);
+    padding: 3px 10px;
+    border-radius: 100px;
+    margin-bottom: 10px;
+  }
+
+  .emp-email { font-size: 13px; color: var(--muted); font-style: italic; }
+
+  /* EMPTY & LOADING */
+  .empty-state, .loading-state {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .loading-state { flex-direction: row; }
+
+  .empty-glyph {
+    font-family: 'Fraunces', serif;
+    font-size: 100px;
+    font-weight: 900;
+    font-style: italic;
+    color: var(--border);
+    line-height: 1;
+  }
+
+  .empty-msg { font-size: 20px; color: var(--muted); line-height: 1.6; }
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  /* ── ADD PAGE ── */
+  .add-page {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 72px 40px;
+  }
+
+  .page-heading {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(52px, 7vw, 96px);
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    margin-bottom: 12px;
+  }
+
+  .page-heading em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--accent);
+  }
+
+  .page-sub {
+    font-size: 17px;
+    color: var(--muted);
+    margin-bottom: 56px;
+    line-height: 1.6;
+  }
+
+  .form-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px;
+  }
+
+  .field { margin-bottom: 28px; }
+
+  .field-label {
+    display: block;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--label);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .field-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 18px;
+    color: var(--text);
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .field-input::placeholder { color: var(--muted); }
+
+  .field-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,248,90,0.08);
+  }
+
+  .btn-submit {
+    width: 100%;
+    padding: 22px;
+    margin-top: 8px;
+    background: var(--accent);
+    color: #0F0F0F;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-submit:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(200,248,90,0.2);
+  }
+
+  .btn-submit:active { transform: translateY(0); }
+
+  .btn-submit:disabled {
+    background: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ── ABOUT PAGE ── */
+  .about-page { padding: 72px; }
+
+  .about-hero {
+    margin-bottom: 64px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 48px;
+  }
+
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 64px;
+  }
+
+  .arch-card {
+    background: var(--surface);
+    padding: 36px 32px;
+    transition: background 0.2s;
+  }
+
+  .arch-card:hover { background: var(--surface2); }
+
+  .arch-num {
+    font-family: 'Fraunces', serif;
+    font-size: 72px;
+    font-weight: 900;
+    font-style: italic;
+    color: var(--border);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .arch-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .arch-desc { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  .arch-tag {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 3px 10px;
+    border-radius: 100px;
+  }
+
+  .tech-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .tech-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s;
+  }
+
+  .tech-item:hover {
+    border-color: var(--accent);
+    transform: translateX(4px);
+  }
+
+  .tech-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: 40px;
+    right: 40px;
+    padding: 16px 24px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 999;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+  .toast.ok  { background: var(--accent); color: #0F0F0F; }
+  .toast.err { background: var(--red);    color: white; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 960px) {
+    .nav { padding: 0 24px; }
+    .hero, .dir-section { padding-left: 32px; padding-right: 32px; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .about-page { padding: 40px 32px; }
+    .arch-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: 1fr; }
+    .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+    .dir-top { flex-direction: column; align-items: flex-start; }
+    .search-box input { width: 100%; }
+    .form-card { padding: 28px 24px; }
+    .nav-links { gap: 2px; }
+    .nav-link { padding: 6px 12px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-brand" onclick="navigate('dashboard')">
+    Employee <em>Dir.</em>
+  </div>
+  <div class="nav-links">
+    <button class="nav-link active" id="nav-dashboard" onclick="navigate('dashboard')">Dashboard</button>
+    <button class="nav-link" id="nav-add" onclick="navigate('add')">Add Employee</button>
+    <button class="nav-link" id="nav-about" onclick="navigate('about')">About</button>
+  </div>
+  <div class="nav-right">
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+      <span class="theme-icon moon">🌙</span>
+      <span class="theme-icon sun">☀️</span>
+    </button>
+  </div>
+</nav>
+
+<!-- PAGE: DASHBOARD -->
+<div class="page active" id="page-dashboard">
+
+  <div class="hero">
+    <div class="hero-tag">AWS Cloud Security Portfolio</div>
+    <h1 class="hero-title">Employee<br><em>Directory</em></h1>
+    <p class="hero-sub">A secure three-tier web application running on AWS — VPC, ALB, EC2, RDS PostgreSQL, Secrets Manager.</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-value" id="totalStat">—</div>
+      <div class="stat-label">Total Employees</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="rolesStat">—</div>
+      <div class="stat-label">Unique Roles</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="latestStat">—</div>
+      <div class="stat-label">Latest Addition</div>
+    </div>
+  </div>
+
+  <div class="dir-section">
+    <div class="dir-top">
+      <h2 class="section-title">All Staff</h2>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search name, role..." oninput="filterCards()" />
+      </div>
+    </div>
+    <div class="emp-grid" id="empGrid">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        &nbsp; Loading directory...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PAGE: ADD EMPLOYEE -->
+<div class="page" id="page-add">
+  <div class="add-page">
+    <h2 class="page-heading">Add<br><em>Employee</em></h2>
+    <p class="page-sub">Fill in the details below. The record will be saved securely to the RDS PostgreSQL database.</p>
+
+    <div class="form-card">
+      <div class="field">
+        <label class="field-label" for="inp-name">Full Name</label>
+        <input class="field-input" id="inp-name" type="text" placeholder="e.g. Jade Fox" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="inp-role">Role</label>
+        <input class="field-input" id="inp-role" type="text" placeholder="e.g. Cloud Security Engineer" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="inp-email">Email Address</label>
+        <input class="field-input" id="inp-email" type="email" placeholder="e.g. jade@company.com" autocomplete="off" />
+      </div>
+      <button class="btn-submit" id="submitBtn" onclick="addEmployee()">
+        Save to Directory
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE: ABOUT -->
+<div class="page" id="page-about">
+  <div class="about-page">
+
+    <div class="about-hero">
+      <div class="hero-tag">Architecture</div>
+      <h2 class="page-heading">How It<br><em>Works</em></h2>
+    </div>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-num">01</div>
+        <div class="arch-title">Public Tier</div>
+        <div class="arch-desc">An Application Load Balancer sits at the edge, accepting HTTP traffic on port 80 from the internet. No direct access to EC2 or RDS is possible.</div>
+        <div class="arch-tag">ALB · Internet-facing</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-num">02</div>
+        <div class="arch-title">App Tier</div>
+        <div class="arch-desc">A Node.js server runs on EC2 inside a private subnet. No public IP. Accessed only via ALB. Fetches database credentials from Secrets Manager on startup.</div>
+        <div class="arch-tag">EC2 · Node.js · SSM</div>
+      </div>
+      <div class="arch-card">
+        <div class="arch-num">03</div>
+        <div class="arch-title">Data Tier</div>
+        <div class="arch-desc">RDS PostgreSQL runs in a private subnet with no internet path. Encrypted at rest with a Customer Managed KMS Key. Only reachable from the app tier.</div>
+        <div class="arch-tag">RDS · KMS · Encrypted</div>
+      </div>
+    </div>
+
+    <h3 style="font-family:'Fraunces',serif; font-size:32px; font-weight:700; margin-bottom:24px; letter-spacing:-0.02em;">Tech Stack</h3>
+    <div class="tech-list">
+      <div class="tech-item"><div class="tech-dot"></div>AWS VPC + Subnets</div>
+      <div class="tech-item"><div class="tech-dot"></div>Application Load Balancer</div>
+      <div class="tech-item"><div class="tech-dot"></div>EC2 (Amazon Linux 2023)</div>
+      <div class="tech-item"><div class="tech-dot"></div>Node.js + Express</div>
+      <div class="tech-item"><div class="tech-dot"></div>RDS PostgreSQL 15</div>
+      <div class="tech-item"><div class="tech-dot"></div>Secrets Manager + CMK</div>
+      <div class="tech-item"><div class="tech-dot"></div>IAM Least Privilege</div>
+      <div class="tech-item"><div class="tech-dot"></div>SSM Session Manager</div>
+      <div class="tech-item"><div class="tech-dot"></div>VPC Flow Logs</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let allEmployees = [];
+
+  // ── ROUTING ──
+  function navigate(page) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    document.getElementById(`page-${page}`).classList.add('active');
+    document.getElementById(`nav-${page}`).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  // ── THEME ──
+  function toggleTheme() {
+    const html = document.documentElement;
+    html.setAttribute('data-theme',
+      html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+    );
+    localStorage.setItem('theme', html.getAttribute('data-theme'));
+  }
+
+  // Restore saved theme
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+
+  // ── HELPERS ──
+  function initials(name = '') {
+    return name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
+  }
+
+  function toast(msg, type = 'ok') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast ${type} show`;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = 'toast', 3200);
+  }
+
+  function updateStats(list) {
+    document.getElementById('totalStat').textContent = list.length || '0';
+    const roles = new Set(list.map(e => e.role).filter(Boolean));
+    document.getElementById('rolesStat').textContent = roles.size || '0';
+    const latest = list.at(-1);
+    document.getElementById('latestStat').textContent = latest ? initials(latest.name) : '—';
+  }
+
+  function renderCards(list) {
+    const grid = document.getElementById('empGrid');
+    if (!list.length) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-glyph">∅</div>
+          <div class="empty-msg">No employees yet.<br>Add one from the <strong>Add Employee</strong> page.</div>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = list.map((e, i) => `
+      <div class="emp-card" style="animation-delay:${i * 0.04}s">
+        <div class="card-top">
+          <div class="emp-avatar">${initials(e.name)}</div>
+          <div class="emp-num">#${String(e.id).padStart(3,'0')}</div>
+        </div>
+        <div class="emp-name">${e.name}</div>
+        <div class="emp-role">${e.role || 'No Role'}</div>
+        <div class="emp-email">${e.email || ''}</div>
+      </div>`).join('');
+  }
+
+  function filterCards() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allEmployees.filter(e =>
+      [e.name, e.role, e.email].some(v => (v || '').toLowerCase().includes(q))
+    );
+    renderCards(filtered);
+  }
+
+  // ── API CALLS ──
+  async function loadEmployees() {
+    try {
+      const res = await fetch('/api/employees');
+      if (!res.ok) throw new Error();
+      allEmployees = await res.json();
+      renderCards(allEmployees);
+      updateStats(allEmployees);
+    } catch {
+      document.getElementById('empGrid').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-glyph">!</div>
+          <div class="empty-msg">Cannot reach the server.<br>Check your connection.</div>
+        </div>`;
+    }
+  }
+
+  async function addEmployee() {
+    const name  = document.getElementById('inp-name').value.trim();
+    const role  = document.getElementById('inp-role').value.trim();
+    const email = document.getElementById('inp-email').value.trim();
+
+    if (!name || !role || !email) {
+      toast('Please fill in all three fields', 'err');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, role, email })
+      });
+      if (!res.ok) throw new Error();
+      ['inp-name','inp-role','inp-email'].forEach(id =>
+        document.getElementById(id).value = ''
+      );
+      toast(`${name} added! 🎉`);
+      await loadEmployees();
+      setTimeout(() => navigate('dashboard'), 800);
+    } catch {
+      toast('Failed to save employee', 'err');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Save to Directory';
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.activeElement.classList.contains('field-input')) {
+      addEmployee();
+    }
+  });
+
+  loadEmployees();
+</script>
+</body>
+</html>

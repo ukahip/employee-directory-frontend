@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/employees",
+      "destination": "http://employee-dir-alb-660684405.us-west-1.elb.amazonaws.com/employees"
+    },
+    {
+      "source": "/health",
+      "destination": "http://employee-dir-alb-660684405.us-west-1.elb.amazonaws.com/health"
+    }
+  ]
+}
