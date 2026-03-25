@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "$API_BASE_URL/:path*"
+      "destination": "@api_base_url/:path*"
     }
   ]
 }
