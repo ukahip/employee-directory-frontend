@@ -1,23 +1,48 @@
 // Vercel Serverless Proxy
-// vercel.json passes the original path as ?path=employees
-// so req.url here is /api/proxy?path=employees — NOT /api/employees
-// We read req.query.path to get the real destination path.
+// vercel.json passes path as ?path=employees
 
 export default async function handler(req, res) {
   const apiBase = process.env.API_BASE_URL;
 
+  console.log('[Proxy] API_BASE_URL:', apiBase);
+  console.log('[Proxy] Full URL:', req.url);
+
   if (!apiBase) {
-    return res.status(500).json({ error: 'API_BASE_URL environment variable is not set in Vercel.' });
+    return res.status(500).json({ 
+      error: 'API_BASE_URL not set',
+      hint: 'Check Vercel Environment Variables'
+    });
   }
 
-  // Read the real path from the query param set by vercel.json rewrite
-  const path = req.query.path || '';
-  const targetUrl = apiBase.replace(/\/$/, '') + '/' + path;
+  // Parse path from query string
+  let path = '';
+  
+  if (req.query && req.query.path) {
+    path = req.query.path;
+  } else {
+    // Manual fallback
+    const match = req.url.match(/[?&]path=([^&]+)/);
+    if (match) path = decodeURIComponent(match[1]);
+  }
+
+  console.log('[Proxy] Extracted path:', path);
+
+  // Ensure path starts with /
+  if (!path.startsWith('/')) {
+    path = '/' + path;
+  }
+
+  const targetUrl = apiBase.replace(/\/$/, '') + path;
+  
+  console.log('[Proxy] Target URL:', targetUrl);
 
   try {
     const options = {
       method: req.method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
     };
 
     if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) {
@@ -25,27 +50,31 @@ export default async function handler(req, res) {
     }
 
     const apiRes = await fetch(targetUrl, options);
+    
+    console.log('[Proxy] Response status:', apiRes.status);
 
-    // Check content type before parsing — avoids the HTML parse error
     const contentType = apiRes.headers.get('content-type') || '';
+    const responseText = await apiRes.text();
+    
     if (!contentType.includes('application/json')) {
-      const text = await apiRes.text();
-      console.error('Non-JSON response from API:', apiRes.status, text.slice(0, 200));
+      console.error('[Proxy] Non-JSON:', responseText.slice(0, 200));
       return res.status(502).json({
-        error: 'API returned non-JSON response',
+        error: 'Non-JSON from backend',
         status: apiRes.status,
-        hint: 'Check that API_BASE_URL is correct and the ALB is reachable'
+        preview: responseText.slice(0, 200),
+        targetUrl: targetUrl
       });
     }
 
-    const data = await apiRes.json();
+    const data = JSON.parse(responseText);
     return res.status(apiRes.status).json(data);
 
   } catch (err) {
+    console.error('[Proxy] Error:', err);
     return res.status(502).json({
       error: 'Failed to reach API',
       detail: err.message,
-      target: targetUrl
+      targetUrl: targetUrl
     });
   }
 }
