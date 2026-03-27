@@ -1,57 +1,41 @@
-// api/proxy.js — Save this file as api/proxy.js in your repo root
-// Vercel Serverless Function — API Proxy with CORS & Error Handling
+// api/proxy.js
+// Simple API proxy for Vercel — NO rewrites needed in vercel.json
 
 export default async function handler(req, res) {
-  const apiBase = process.env.API_BASE_URL;
-
-  // Set CORS headers
+  // Allow all origins
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
+  const apiBase = process.env.API_BASE_URL;
+  
   if (!apiBase) {
-    console.error('❌ API_BASE_URL is not set');
-    return res.status(500).json({ 
-      error: 'API_BASE_URL not configured'
-    });
+    return res.status(500).json({ error: 'API_BASE_URL not set' });
   }
 
-  // Strip /api prefix
-  const path = req.url.replace(/^\/api/, '') || '/';
-  const targetUrl = `${apiBase}${path}`;
-
-  console.log(`📡 ${req.method} ${targetUrl}`);
+  // Get the endpoint from query string
+  // Frontend calls: /api/proxy?endpoint=/employees
+  const endpoint = req.query.endpoint || '/employees';
+  const targetUrl = `${apiBase}${endpoint}`;
 
   try {
-    const options = {
+    const opts = {
       method: req.method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(req.headers.authorization && { 'Authorization': req.headers.authorization })
-      },
-      timeout: 10000,
+      headers: { 'Content-Type': 'application/json' }
     };
 
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
-      options.body = JSON.stringify(req.body);
+    if (req.body && req.method !== 'GET') {
+      opts.body = JSON.stringify(req.body);
     }
 
-    const apiRes = await fetch(targetUrl, options);
-    const data = await apiRes.json();
+    const response = await fetch(targetUrl, opts);
+    const data = await response.json();
 
-    console.log(`✅ ${apiRes.status}`);
-    res.status(apiRes.status).json(data);
-
-  } catch (err) {
-    console.error('❌ Error:', err.message);
-    res.status(502).json({
-      error: 'API unreachable',
-      message: err.message
-    });
+    res.status(response.status).json(data);
+  } catch (error) {
+    console.error('Proxy error:', error.message);
+    res.status(502).json({ error: 'Failed to reach backend', detail: error.message });
   }
 }
