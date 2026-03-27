@@ -1311,12 +1311,18 @@ body {
   /* ── API ── */
   async function load() {
     try {
+      // This calls /api/employees which gets rewritten to /api/proxy?path=employees
       const r = await fetch('/api/employees');
-      if (!r.ok) throw new Error();
+      if (!r.ok) {
+        const error = await r.json();
+        console.error('API error:', error);
+        throw new Error(error.error || `HTTP ${r.status}`);
+      }
       employees = await r.json();
       renderCards(employees);
       updateStats(employees);
-    } catch {
+    } catch (err) {
+      console.error('Failed to load:', err);
       document.getElementById('empGrid').innerHTML = `
         <div class="state-box">
           <div class="state-icon">⚠️</div>
@@ -1326,54 +1332,38 @@ body {
     }
   }
 
-  // Replace the load() function in your index.html with this
+  async function addEmployee() {
+    const name  = document.getElementById('in-name').value.trim();
+    const role  = document.getElementById('in-role').value.trim();
+    const email = document.getElementById('in-email').value.trim();
+    if (!name||!role||!email) { toast('Please fill in all three fields','err'); return; }
 
-async function load() {
-  try {
-    // Call the proxy with endpoint as query param
-    const r = await fetch('/api/proxy?endpoint=/employees');
-    if (!r.ok) throw new Error(`API error: ${r.status}`);
-    employees = await r.json();
-    renderCards(employees);
-    updateStats(employees);
-  } catch (err) {
-    console.error('Failed to load:', err);
-    document.getElementById('empGrid').innerHTML = `
-      <div class="state-box">
-        <div class="state-icon">⚠️</div>
-        <div class="state-title">Cannot reach server</div>
-        <div class="state-sub">Check your connection or API configuration.</div>
-      </div>`;
+    const btn = document.getElementById('addBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    try {
+      const r = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, role, email })
+      });
+      
+      if (!r.ok) {
+        const error = await r.json();
+        throw new Error(error.error || `HTTP ${r.status}`);
+      }
+      
+      ['in-name','in-role','in-email'].forEach(id=>document.getElementById(id).value='');
+      toast(`${name} added! 🎉`);
+      await load();
+      setTimeout(()=>go('dashboard'), 600);
+    } catch (err) {
+      console.error('Failed to add:', err);
+      toast('Failed to save employee','err');
+      btn.disabled = false;
+      btn.textContent = 'Save to Directory →';
+    }
   }
-}
-
-async function addEmployee() {
-  const name  = document.getElementById('in-name').value.trim();
-  const role  = document.getElementById('in-role').value.trim();
-  const email = document.getElementById('in-email').value.trim();
-  if (!name||!role||!email) { toast('Please fill in all three fields','err'); return; }
-
-  const btn = document.getElementById('addBtn');
-  btn.disabled = true; btn.textContent = 'Saving…';
-
-  try {
-    // Use the query param approach
-    const r = await fetch('/api/proxy?endpoint=/employees', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, role, email })
-    });
-    if (!r.ok) throw new Error();
-    ['in-name','in-role','in-email'].forEach(id=>document.getElementById(id).value='');
-    toast(`${name} added! 🎉`);
-    await load();
-    setTimeout(()=>go('dashboard'), 600);
-  } catch {
-    toast('Failed to save employee','err');
-    btn.disabled = false;
-    btn.textContent = 'Add Employee';
-  }
-}
 
   /* Ripple on cards */
   document.addEventListener('click', e => {
