@@ -1,11 +1,8 @@
-// Vercel Serverless Proxy
-// vercel.json passes path as ?path=employees
-
 export default async function handler(req, res) {
   const apiBase = process.env.API_BASE_URL;
 
   console.log('[Proxy] API_BASE_URL:', apiBase);
-  console.log('[Proxy] Full URL:', req.url);
+  console.log('[Proxy] req.url:', req.url);
 
   if (!apiBase) {
     return res.status(500).json({ 
@@ -20,14 +17,12 @@ export default async function handler(req, res) {
   if (req.query && req.query.path) {
     path = req.query.path;
   } else {
-    // Manual fallback
     const match = req.url.match(/[?&]path=([^&]+)/);
     if (match) path = decodeURIComponent(match[1]);
   }
 
   console.log('[Proxy] Extracted path:', path);
 
-  // Ensure path starts with /
   if (!path.startsWith('/')) {
     path = '/' + path;
   }
