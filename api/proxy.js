@@ -11,7 +11,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Parse path from query string
   let path = '';
   
   if (req.query && req.query.path) {
