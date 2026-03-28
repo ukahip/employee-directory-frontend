@@ -463,7 +463,6 @@ body {
   animation: cardIn .4s var(--ease) both;
   position: relative;
   overflow: hidden;
-  group: true;
 }
 
 @keyframes cardIn {
@@ -960,6 +959,163 @@ body {
 .toast.err { background:var(--red);   color:white; }
 
 /* ══════════════════════════════════════
+   MODAL
+══════════════════════════════════════ */
+.modal {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(8px);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.modal.active {
+  display:flex;
+  animation:fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity:0; }
+  to { opacity:1; }
+}
+
+.modal-content {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:32px;
+  max-width:420px;
+  width:100%;
+  box-shadow:0 24px 64px rgba(0,0,0,0.3);
+  animation:slideUp 0.3s var(--spring);
+  position:relative;
+}
+
+@keyframes slideUp {
+  from { transform:translateY(40px); opacity:0; }
+  to { transform:translateY(0); opacity:1; }
+}
+
+.modal-close {
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  border:none;
+  background:var(--bg3);
+  color:var(--text2);
+  font-size:20px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all 0.2s;
+}
+
+.modal-close:hover {
+  background:var(--red);
+  color:white;
+}
+
+.modal-header {
+  display:flex;
+  align-items:center;
+  gap:16px;
+  margin-bottom:24px;
+}
+
+.modal-avatar {
+  width:72px;
+  height:72px;
+  border-radius:20px;
+  background:linear-gradient(135deg, var(--blue), var(--orange));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Sora',sans-serif;
+  font-size:28px;
+  font-weight:800;
+  color:white;
+}
+
+.modal-role {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--orange);
+  background:rgba(255,107,53,.1);
+  border-radius:100px;
+  padding:4px 12px;
+  margin-top:8px;
+  text-transform:uppercase;
+}
+
+.modal-field {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+
+.modal-label {
+  font-size:13px;
+  color:var(--text3);
+  font-weight:600;
+}
+
+.modal-value {
+  font-size:14px;
+  color:var(--text);
+  font-weight:700;
+}
+
+.modal-actions {
+  display:flex;
+  gap:12px;
+  margin-top:24px;
+}
+
+.modal-btn {
+  flex:1;
+  padding:14px;
+  border-radius:12px;
+  border:none;
+  font-family:'Sora',sans-serif;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+  transition:all 0.2s;
+}
+
+.modal-btn.secondary {
+  background:var(--bg3);
+  color:var(--text2);
+}
+
+.modal-btn.secondary:hover {
+  background:var(--border);
+}
+
+.modal-btn.danger {
+  background:var(--red);
+  color:white;
+}
+
+.modal-btn.danger:hover {
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(255,71,87,0.3);
+}
+
+/* ══════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════ */
 @media (max-width:1100px) {
@@ -972,11 +1128,24 @@ body {
 }
 
 @media (max-width:680px) {
-  .nav { padding:0 20px; }
-  .nav-pills { display:none; }
+  .nav { 
+    padding:12px 20px; 
+    height:auto; 
+    min-height:68px; 
+    flex-wrap:wrap; 
+    gap:12px; 
+  }
+  .nav-pills { 
+    order:3; 
+    width:100%; 
+    justify-content:center;
+    margin-top:8px;
+  }
+  .toggle-wrap { order:2; }
   .stats-strip { grid-template-columns:1fr; }
   .dir-bar { flex-direction:column; align-items:flex-start; }
   .search-field { width:100%; }
+  .modal-content { padding:24px; }
 }
 </style>
 </head>
@@ -1197,11 +1366,44 @@ body {
   </div>
 </div>
 
+<!-- ══════════ EMPLOYEE DETAIL MODAL ══════════ -->
+<div id="empModal" class="modal" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-header">
+      <div class="modal-avatar" id="modalAvatar">??</div>
+      <div>
+        <h2 id="modalName">Employee Name</h2>
+        <span id="modalRole" class="modal-role">Role</span>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <span class="modal-label">Employee ID</span>
+        <span id="modalId" class="modal-value">#001</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-label">Email</span>
+        <span id="modalEmail" class="modal-value">email@company.com</span>
+      </div>
+      <div class="modal-field">
+        <span class="modal-label">Department</span>
+        <span class="modal-value">Engineering</span>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="closeModal()">Close</button>
+        <button class="modal-btn danger" id="modalDeleteBtn" onclick="deleteFromModal()">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
   let employees = [];
+  let currentEmployeeId = null;
 
   /* ── NAV SLIDER ── */
   function positionSlider(btn) {
@@ -1290,7 +1492,7 @@ body {
       return;
     }
     g.innerHTML = list.map((e,i) => `
-      <div class="emp-card" style="animation-delay:${i*.05}s">
+      <div class="emp-card" style="animation-delay:${i*.05}s" onclick='openModal(${JSON.stringify(e).replace(/'/g, "&apos;")})'>
         <div class="card-header">
           <div class="emp-avatar">${initials(e.name)}</div>
           <div class="emp-badge">#${String(e.id).padStart(3,'0')}</div>
@@ -1308,10 +1510,48 @@ body {
     ));
   }
 
+  /* ── MODAL ── */
+  function openModal(employee) {
+    currentEmployeeId = employee.id;
+    document.getElementById('modalAvatar').textContent = initials(employee.name);
+    document.getElementById('modalName').textContent = employee.name;
+    document.getElementById('modalRole').textContent = '💼 ' + (employee.role || 'No Role');
+    document.getElementById('modalId').textContent = '#' + String(employee.id).padStart(3, '0');
+    document.getElementById('modalEmail').textContent = employee.email || 'N/A';
+    document.getElementById('empModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(event) {
+    if (!event || event.target.id === 'empModal' || event.target.classList.contains('modal-close')) {
+      document.getElementById('empModal').classList.remove('active');
+      document.body.style.overflow = '';
+      currentEmployeeId = null;
+    }
+  }
+
+  async function deleteFromModal() {
+    if (!currentEmployeeId) return;
+    if (!confirm('Are you sure you want to delete this employee?')) return;
+    
+    try {
+      const r = await fetch(`/api/employees/${currentEmployeeId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!r.ok) throw new Error();
+      
+      closeModal();
+      toast('Employee deleted! 🗑️');
+      await load();
+    } catch (err) {
+      toast('Failed to delete employee','err');
+    }
+  }
+
   /* ── API ── */
   async function load() {
     try {
-      // This calls /api/employees which gets rewritten to /api/proxy?path=employees
       const r = await fetch('/api/employees');
       if (!r.ok) {
         const error = await r.json();
